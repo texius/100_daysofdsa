@@ -1,0 +1,11 @@
+# Compiled executables
+*.exe
+*.out
+*.app
+
+# Output directory
+output/
+
+# OS generated files
+.DS_Store
+Thumbs.db
