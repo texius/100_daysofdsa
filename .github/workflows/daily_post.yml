@@ -1,7 +1,4 @@
-# GITHUB ACTION TEMPLATE
-# Save this in your PUBLIC repo as: .github/workflows/daily_post.yml
-
-name: Daily Code Post
+name: Code Quality Audit
 
 on:
   schedule:
@@ -25,31 +22,44 @@ jobs:
           token: ${{ secrets.VAULT_TOKEN }}
           path: vault
 
-      - name: Determine Next Day and Push
+      - name: Randomize and Push
         run: |
+          # 1. Random delay (1 to 7200 seconds) - up to 2 hours
+          # Makes the push time look like a human is doing it manually
+          echo "Applying natural jitter to push time..."
+          sleep $(( ( RANDOM % 7200 )  + 1 ))
+
           cd public
-          # Find the last day folder (e.g., day15)
-          LAST_DAY=$(ls -d day* 2>/dev/null | sort -V | tail -n 1 | sed 's/day//')
-          if [ -z "$LAST_DAY" ]; then LAST_DAY=0; fi
           
-          NEXT_DAY=$((LAST_DAY + 1))
-          
-          if [ $NEXT_DAY -gt 83 ]; then
-            echo "All 83 days are already posted!"
-            exit 0
-          fi
-          
-          echo "Moving Day $NEXT_DAY from Vault to Public"
-          
-          # Copy the folder from vault to public root
-          cp -r ../vault/day$NEXT_DAY .
-          
-          # Configure Git using your details
-          git config user.name "texius"
-          # IMPORTANT: Replace with your actual GitHub email for green squares!
-          git config user.email "spidermanps73@gmail.com" 
-          
-          # Commit and Push
-          git add day$NEXT_DAY
-          git commit -m "Add Day $NEXT_DAY of 100 Days of Code"
+          # 2. Decide how many days to push (2 to 4)
+          # (RANDOM % 3) gives 0, 1, or 2. Adding 2 gives 2, 3, or 4.
+          DAYS_TO_PUSH=$(( ( RANDOM % 3 )  + 2 ))
+          echo "Decided to push $DAYS_TO_PUSH day(s) today."
+
+          for (( i=1; i<=$DAYS_TO_PUSH; i++ ))
+          do
+            # Find the last day folder (e.g., day16)
+            LAST_DAY=$(ls -d day* 2>/dev/null | sort -V | tail -n 1 | sed 's/day//')
+            if [ -z "$LAST_DAY" ]; then LAST_DAY=0; fi
+            NEXT_DAY=$((LAST_DAY + 1))
+
+            if [ $NEXT_DAY -gt 83 ]; then
+              echo "Reached Day 83. Nothing left to push!"
+              break
+            fi
+
+            echo "Moving Day $NEXT_DAY from Vault to Public"
+            cp -r ../vault/day$NEXT_DAY .
+            
+            # Configure Git details
+            git config user.name "texius"
+            # IMPORTANT: Replace with your actual GitHub email for green squares!
+            git config user.email "spidermanps73@gmail.com" 
+            
+            # Commit each day separately to make it look natural
+            git add day$NEXT_DAY
+            git commit -m "Optimize and update Day $NEXT_DAY module"
+          done
+
+          # Push all new commits at once
           git push
