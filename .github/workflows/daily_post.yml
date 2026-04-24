@@ -1,0 +1,55 @@
+# GITHUB ACTION TEMPLATE
+# Save this in your PUBLIC repo as: .github/workflows/daily_post.yml
+
+name: Daily Code Post
+
+on:
+  schedule:
+    # Runs at 10:00 AM UTC every day
+    - cron: '0 10 * * *'
+  workflow_dispatch: # Allows manual trigger for testing
+
+jobs:
+  post_day:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Public Repo
+        uses: actions/checkout@v4
+        with:
+          path: public
+
+      - name: Checkout Private Vault
+        uses: actions/checkout@v4
+        with:
+          repository: texius/100_daysofcode_vault
+          token: ${{ secrets.VAULT_TOKEN }}
+          path: vault
+
+      - name: Determine Next Day and Push
+        run: |
+          cd public
+          # Find the last day folder (e.g., day15)
+          LAST_DAY=$(ls -d day* 2>/dev/null | sort -V | tail -n 1 | sed 's/day//')
+          if [ -z "$LAST_DAY" ]; then LAST_DAY=0; fi
+          
+          NEXT_DAY=$((LAST_DAY + 1))
+          
+          if [ $NEXT_DAY -gt 83 ]; then
+            echo "All 83 days are already posted!"
+            exit 0
+          fi
+          
+          echo "Moving Day $NEXT_DAY from Vault to Public"
+          
+          # Copy the folder from vault to public root
+          cp -r ../vault/day$NEXT_DAY .
+          
+          # Configure Git using your details
+          git config user.name "texius"
+          # IMPORTANT: Replace with your actual GitHub email for green squares!
+          git config user.email "spidermanps73@gmail.com" 
+          
+          # Commit and Push
+          git add day$NEXT_DAY
+          git commit -m "Add Day $NEXT_DAY of 100 Days of Code"
+          git push
